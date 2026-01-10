@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generatore Password Deterministico</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+            width: 100%;
+            max-width: 500px;
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus {
+            border-color: #4a6ee0;
+            outline: none;
+        }
+        
+        input[type="text"].error {
+            border-color: #e74c3c;
+            background-color: #ffeaea;
+        }
+        
+        .char-counter {
+            text-align: right;
+            font-size: 12px;
+            color: #777;
+            margin-top: 5px;
+        }
+        
+        .generate-btn {
+            background: linear-gradient(to right, #4a6ee0, #6a11cb);
+            color: white;
+            border: none;
+            padding: 15px 20px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 10px;
+        }
+        
+        .generate-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(106, 17, 203, 0.3);
+        }
+        
+        .generate-btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+        
+        .generate-btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .password-container {
+            margin-top: 30px;
+        }
+        
+        #password {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            font-family: 'Courier New', monospace;
+            text-align: center;
+            letter-spacing: 1px;
+            border: 2px dashed #4a6ee0;
+            border-radius: 8px;
+            background-color: #f8f9ff;
+            color: #333;
+            user-select: all;
+        }
+        
+        .password-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .action-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .copy-btn {
+            background-color: #4a6ee0;
+            color: white;
+        }
+        
+        .copy-btn:hover {
+            background-color: #3a5ed0;
+        }
+        
+        .copy-btn.copied {
+            background-color: #2ecc71;
+        }
+        
+        .share-btn {
+            background-color: #6a11cb;
+            color: white;
+        }
+        
+        .share-btn:hover {
+            background-color: #5a0bbb;
+        }
+        
+        .share-btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .share-options {
+            display: none;
+            position: absolute;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            z-index: 100;
+            min-width: 200px;
+            margin-top: 10px;
+        }
+        
+        .share-option {
+            padding: 12px 15px;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background-color 0.2s;
+        }
+        
+        .share-option:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .requirements {
+            margin-top: 25px;
+            padding: 15px;
+            background-color: #f8f9ff;
+            border-radius: 8px;
+        }
+        
+        .requirements h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .requirement {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .requirement-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        
+        .requirement.valid .requirement-icon {
+            background-color: #2ecc71;
+            color: white;
+        }
+        
+        .requirement.invalid .requirement-icon {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .strength-meter {
+            margin-top: 20px;
+        }
+        
+        .strength-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
+        .strength-bar {
+            height: 10px;
+            background-color: #eee;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .strength-fill {
+            height: 100%;
+            width: 0%;
+            border-radius: 5px;
+            transition: width 0.5s, background-color 0.5s;
+        }
+        
+        .strength-weak {
+            background-color: #e74c3c;
+            width: 33%;
+        }
+        
+        .strength-medium {
+            background-color: #f39c12;
+            width: 66%;
+        }
+        
+        .strength-strong {
+            background-color: #2ecc71;
+            width: 100%;
+        }
+        
+        .error-message {
+            color: #e74c3c;
+            font-size: 12px;
+            margin-top: 5px;
+            display: none;
+        }
+        
+        .success-message {
+            color: #2ecc71;
+            text-align: center;
+            margin-top: 10px;
+            font-weight: 600;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .info-text {
+            font-size: 12px;
+            color: #777;
+            margin-top: 10px;
+            font-style: italic;
+        }
+        
+        .input-hint {
+            font-size: 11px;
+            color: #888;
+            margin-top: 3px;
+        }
+        
+        .security-warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 13px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Generatore Password</h1>
+        <p class="subtitle">Inserisci 2 parole e 1 numero per generare una password sicura</p>
+        
+        <div class="input-group">
+            <label for="word1">Parola 1 (solo lettere minuscole, 1-10 caratteri)</label>
+            <input type="text" id="word1" placeholder="es: gatto" maxlength="10">
+            <div class="char-counter"><span id="counter1">0</span>/10</div>
+            <div class="error-message" id="error1">Solo lettere minuscole (a-z)</div>
+        </div>
+        
+        <div class="input-group">
+            <label for="word2">Parola 2 (solo lettere minuscole, 1-10 caratteri)</label>
+            <input type="text" id="word2" placeholder="es: casa" maxlength="10">
+            <div class="char-counter"><span id="counter2">0</span>/10</div>
+            <div class="error-message" id="error2">Solo lettere minuscole (a-z)</div>
+        </div>
+        
+        <div class="input-group">
+            <label for="word3">Numero (da 1 a 10 cifre)</label>
+            <input type="text" id="word3" placeholder="es: 12345" maxlength="10" inputmode="numeric">
+            <div class="char-counter"><span id="counter3">0</span>/10</div>
+            <div class="error-message" id="error3">Solo numeri (0-9)</div>
+            <div class="input-hint">Nota: questo è un numero, non una parola</div>
+        </div>
+        
+        <button class="generate-btn" id="generateBtn">Genera Password</button>
+        
+        <div class="password-container">
+            <input type="text" id="password" readonly placeholder="La password apparirà qui">
+            
+            <div class="password-actions">
+                <button class="action-btn copy-btn" id="copyBtn">
+                    <span>📋</span>
+                    <span>Copia Password</span>
+                </button>
+                <button class="action-btn share-btn" id="shareBtn">
+                    <span>↗️</span>
+                    <span>Condividi</span>
+                </button>
+            </div>
+            
+            <div class="share-options" id="shareOptions">
+                <button class="share-option" id="shareNative">
+                    <span>📱</span>
+                    <span>Condivisione nativa</span>
+                </button>
+                <button class="share-option" id="shareEmail">
+                    <span>✉️</span>
+                    <span>Condividi via Email</span>
+                </button>
+                <button class="share-option" id="shareWhatsApp">
+                    <span>💬</span>
+                    <span>Condividi su WhatsApp</span>
+                </button>
+                <button class="share-option" id="shareTelegram">
+                    <span>📨</span>
+                    <span>Condividi su Telegram</span>
+                </button>
+                <button class="share-option" id="shareCopyLink">
+                    <span>🔗</span>
+                    <span>Copia come Link</span>
+                </button>
+            </div>
+            
+            <div class="security-warning" id="securityWarning">
+                ⚠️ <strong>Attenzione:</strong> Stai condividendo una password in testo semplice. 
+                Assicurati di utilizzare canali sicuri e di fiducia.
+            </div>
+        </div>
+        
+        <div class="success-message" id="successMessage"></div>
+        
+        <div class="strength-meter">
+            <div class="strength-label">
+                <span>Forza password:</span>
+                <span id="strengthText">-</span>
+            </div>
+            <div class="strength-bar">
+                <div class="strength-fill" id="strengthBar"></div>
+            </div>
+        </div>
+        
+        <div class="requirements">
+            <h3>Requisiti Password</h3>
+            <div class="requirement" id="req-length">
+                <div class="requirement-icon">!</div>
+                <span>Almeno 12 caratteri</span>
+            </div>
+            <div class="requirement" id="req-uppercase">
+                <div class="requirement-icon">!</div>
+                <span>Almeno 1 lettera maiuscola</span>
+            </div>
+            <div class="requirement" id="req-number">
+                <div class="requirement-icon">!</div>
+                <span>Almeno 1 numero (0-9)</span>
+            </div>
+            <div class="requirement" id="req-special">
+                <div class="requirement-icon">!</div>
+                <span>Almeno 1 carattere speciale (!@#$%^&*)</span>
+            </div>
+            <p class="info-text">Le stesse due parole e numero generano sempre la stessa password</p>
+        </div>
+    </div>
+
+    <script>
+        // Funzione per hash semplice ma deterministica (SHA-256)
+        async function sha256(message) {
+            const msgBuffer = new TextEncoder().encode(message);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        // Caratteri disponibili per la password
+        const specialChars = "!@#$%^&*";
+        const numbers = "0123456789";
+        const lowercase = "abcdefghijklmnopqrstuvwxyz";
+        const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+        // Funzione per validare input
+        function validateWord1(word) {
+            return /^[a-z]+$/.test(word) && word.length >= 1 && word.length <= 10;
+        }
+        
+        function validateWord2(word) {
+            return /^[a-z]+$/.test(word) && word.length >= 1 && word.length <= 10;
+        }
+        
+        function validateWord3(number) {
+            return /^[0-9]+$/.test(number) && number.length >= 1 && number.length <= 10 && parseInt(number) >= 0;
+        }
+
+        // Funzione per calcolare la forza della password
+        function calculatePasswordStrength(password) {
+            let score = 0;
+            
+            // Lunghezza
+            if (password.length >= 12) score += 25;
+            if (password.length >= 16) score += 10;
+            
+            // Complessità
+            if (/[A-Z]/.test(password)) score += 20;
+            if (/[0-9]/.test(password)) score += 20;
+            if (/[!@#$%^&*]/.test(password)) score += 25;
+            
+            // Varietà di caratteri
+            const charTypes = [/[a-z]/.test(password), /[A-Z]/.test(password), 
+                              /[0-9]/.test(password), /[!@#$%^&*]/.test(password)];
+            const typeCount = charTypes.filter(Boolean).length;
+            score += (typeCount - 1) * 10;
+            
+            return Math.min(score, 100);
+        }
+
+        // Funzione per aggiornare i requisiti visivi
+        function updateRequirements(password) {
+            const reqs = {
+                length: password.length >= 12,
+                uppercase: /[A-Z]/.test(password),
+                number: /[0-9]/.test(password),
+                special: /[!@#$%^&*]/.test(password)
+            };
+            
+            document.getElementById('req-length').className = `requirement ${reqs.length ? 'valid' : 'invalid'}`;
+            document.getElementById('req-uppercase').className = `requirement ${reqs.uppercase ? 'valid' : 'invalid'}`;
+            document.getElementById('req-number').className = `requirement ${reqs.number ? 'valid' : 'invalid'}`;
+            document.getElementById('req-special').className = `requirement ${reqs.special ? 'valid' : 'invalid'}`;
+            
+            return reqs;
+        }
+
+        // Funzione per aggiornare la forza della password
+        function updateStrength(password) {
+            const strength = calculatePasswordStrength(password);
+            const strengthBar = document.getElementById('strengthBar');
+            const strengthText = document.getElementById('strengthText');
+            
+            strengthBar.className = 'strength-fill';
+            
+            if (strength < 40) {
+                strengthBar.classList.add('strength-weak');
+                strengthText.textContent = 'Debole';
+                strengthText.style.color = '#e74c3c';
+            } else if (strength < 70) {
+                strengthBar.classList.add('strength-medium');
+                strengthText.textContent = 'Media';
+                strengthText.style.color = '#f39c12';
+            } else {
+                strengthBar.classList.add('strength-strong');
+                strengthText.textContent = 'Forte';
+                strengthText.style.color = '#2ecc71';
+            }
+        }
+
+        // Funzione principale per generare la password
+        async function generatePassword(word1, word2, number) {
+            // Concatenazione delle parole e del numero
+            const combined = word1 + word2 + number;
+            
+            // Hash deterministico
+            const hash = await sha256(combined);
+            
+            // Convertiamo l'hash in una sequenza deterministica di caratteri
+            let password = '';
+            const hashChars = hash.split('');
+            
+            // Generiamo una password di almeno 12 caratteri
+            for (let i = 0; password.length < 12; i++) {
+                const charCode = parseInt(hashChars[i % hashChars.length], 16);
+                
+                // Pattern di generazione modificato per includere il numero
+                const patternIndex = i % 5;
+                
+                if (patternIndex === 0) {
+                    // Lettere minuscole dalla prima parola
+                    password += word1.charAt(charCode % word1.length);
+                } else if (patternIndex === 1) {
+                    // Lettere minuscole dalla seconda parola
+                    password += word2.charAt(charCode % word2.length);
+                } else if (patternIndex === 2) {
+                    // Cifre dal numero inserito
+                    password += number.charAt(charCode % number.length);
+                } else if (patternIndex === 3) {
+                    // Caratteri speciali
+                    password += specialChars.charAt(charCode % specialChars.length);
+                } else {
+                    // Lettere maiuscole (dalle parole)
+                    const words = [word1, word2];
+                    const word = words[charCode % 2];
+                    password += word.charAt(charCode % word.length).toUpperCase();
+                }
+            }
+            
+            // Aggiungiamo caratteri extra se necessario per raggiungere almeno 12 caratteri
+            while (password.length < 12) {
+                const extraHash = await sha256(hash + password);
+                const extraCharCode = parseInt(extraHash.charAt(password.length % extraHash.length), 16);
+                
+                const sets = [lowercase, uppercase, numbers, specialChars];
+                const set = sets[password.length % 4];
+                password += set.charAt(extraCharCode % set.length);
+            }
+            
+            // Assicuriamoci che ci sia almeno un carattere di ogni tipo
+            if (!/[A-Z]/.test(password)) {
+                const index = parseInt(hash.charAt(0), 16) % password.length;
+                password = password.substring(0, index) + 
+                          uppercase.charAt(parseInt(hash.charAt(1), 16) % uppercase.length) + 
+                          password.substring(index + 1);
+            }
+            
+            // Il numero è già garantito dal numero inserito dall'utente,
+            // ma aggiungiamo un controllo extra
+            if (!/[0-9]/.test(password)) {
+                const index = parseInt(hash.charAt(2), 16) % password.length;
+                password = password.substring(0, index) + 
+                          numbers.charAt(parseInt(hash.charAt(3), 16) % numbers.length) + 
+                          password.substring(index + 1);
+            }
+            
+            if (!/[!@#$%^&*]/.test(password)) {
+                const index = parseInt(hash.charAt(4), 16) % password.length;
+                password = password.substring(0, index) + 
+                          specialChars.charAt(parseInt(hash.charAt(5), 16) % specialChars.length) + 
+                          password.substring(index + 1);
+            }
+            
+            return password;
+        }
+
+        // Funzione per mostrare il messaggio di successo
+        function showSuccessMessage(message, duration = 2000) {
+            const successMessage = document.getElementById('successMessage');
+            successMessage.textContent = message;
+            successMessage.style.opacity = '1';
+            setTimeout(() => {
+                successMessage.style.opacity = '0';
+            }, duration);
+        }
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            const wordInputs = [
+                {id: 'word1', validator: validateWord1, errorId: 'error1', counterId: 'counter1'},
+                {id: 'word2', validator: validateWord2, errorId: 'error2', counterId: 'counter2'},
+                {id: 'word3', validator: validateWord3, errorId: 'error3', counterId: 'counter3'}
+            ];
+            
+            const generateBtn = document.getElementById('generateBtn');
+            const copyBtn = document.getElementById('copyBtn');
+            const shareBtn = document.getElementById('shareBtn');
+            const shareOptions = document.getElementById('shareOptions');
+            const passwordField = document.getElementById('password');
+            const securityWarning = document.getElementById('securityWarning');
+            
+            // Variabili per gestire il menu di condivisione
+            let shareMenuVisible = false;
+            let currentPassword = '';
+            
+            // Contatori caratteri e validazione
+            wordInputs.forEach((inputConfig, index) => {
+                const input = document.getElementById(inputConfig.id);
+                const counter = document.getElementById(inputConfig.counterId);
+                const error = document.getElementById(inputConfig.errorId);
+                
+                input.addEventListener('input', function() {
+                    const value = this.value;
+                    counter.textContent = value.length;
+                    
+                    // Messaggi di errore specifici
+                    let errorMessage = '';
+                    if (inputConfig.id === 'word3') {
+                        if (!/^[0-9]*$/.test(value)) {
+                            errorMessage = 'Solo numeri (0-9)';
+                        } else if (value.length > 0 && !validateWord3(value)) {
+                            errorMessage = 'Massimo 10 cifre';
+                        }
+                    } else {
+                        if (value.length > 0 && !inputConfig.validator(value)) {
+                            errorMessage = 'Solo lettere minuscole (a-z)';
+                        }
+                    }
+                    
+                    if (errorMessage) {
+                        this.classList.add('error');
+                        error.textContent = errorMessage;
+                        error.style.display = 'block';
+                    } else {
+                        this.classList.remove('error');
+                        error.style.display = 'none';
+                    }
+                    
+                    updateGenerateButton();
+                });
+                
+                // Previeni input non numerici nel terzo campo
+                if (inputConfig.id === 'word3') {
+                    input.addEventListener('keypress', function(e) {
+                        if (!/[0-9]/.test(e.key)) {
+                            e.preventDefault();
+                        }
+                    });
+                } else {
+                    // Previeni input maiuscole nei primi due campi
+                    input.addEventListener('keypress', function(e) {
+                        if (/[A-Z]/.test(e.key)) {
+                            e.preventDefault();
+                            this.value += e.key.toLowerCase();
+                        }
+                    });
+                }
+            });
+            
+            // Aggiorna stato del pulsante di generazione
+            function updateGenerateButton() {
+                const allValid = wordInputs.every(config => {
+                    const input = document.getElementById(config.id);
+                    return config.validator(input.value);
+                });
+                
+                generateBtn.disabled = !allValid;
+            }
+            
+            // Genera password
+            generateBtn.addEventListener('click', async function() {
+                const word1 = document.getElementById('word1').value;
+                const word2 = document.getElementById('word2').value;
+                const number = document.getElementById('word3').value;
+                
+                if (!validateWord1(word1) || !validateWord2(word2) || !validateWord3(number)) {
+                    alert('Per favore, controlla che:\n1. Le prime due parole siano solo lettere minuscole\n2. Il terzo campo sia un numero (1-10 cifre)');
+                    return;
+                }
+                
+                generateBtn.textContent = 'Generazione in corso...';
+                generateBtn.disabled = true;
+                
+                try {
+                    currentPassword = await generatePassword(word1, word2, number);
+                    passwordField.value = currentPassword;
+                    
+                    // Aggiorna requisiti e forza
+                    updateRequirements(currentPassword);
+                    updateStrength(currentPassword);
+                    
+                    // Abilita i pulsanti di azione
+                    copyBtn.disabled = false;
+                    shareBtn.disabled = false;
+                    copyBtn.classList.remove('copied');
+                    
+                    // Nascondi eventuale menu di condivisione aperto
+                    shareOptions.style.display = 'none';
+                    shareMenuVisible = false;
+                    
+                } catch (error) {
+                    alert('Errore nella generazione della password: ' + error.message);
+                } finally {
+                    generateBtn.textContent = 'Genera Password';
+                    generateBtn.disabled = false;
+                }
+            });
+            
+            // Copia password
+            copyBtn.addEventListener('click', function() {
+                if (!passwordField.value) return;
+                
+                passwordField.select();
+                passwordField.setSelectionRange(0, 99999);
+                
+                try {
+                    navigator.clipboard.writeText(passwordField.value).then(() => {
+                        copyBtn.classList.add('copied');
+                        copyBtn.innerHTML = '<span>✓</span><span>Copiato!</span>';
+                        showSuccessMessage('Password copiata negli appunti!');
+                        
+                        setTimeout(() => {
+                            copyBtn.classList.remove('copied');
+                            copyBtn.innerHTML = '<span>📋</span><span>Copia Password</span>';
+                        }, 2000);
+                    });
+                } catch (err) {
+                    // Fallback per browser più vecchi
+                    document.execCommand('copy');
+                    copyBtn.classList.add('copied');
+                    copyBtn.innerHTML = '<span>✓</span><span>Copiato!</span>';
+                    showSuccessMessage('Password copiata negli appunti!');
+                    
+                    setTimeout(() => {
+                        copyBtn.classList.remove('copied');
+                        copyBtn.innerHTML = '<span>📋</span><span>Copia Password</span>';
+                    }, 2000);
+                }
+            });
+            
+            // Gestione menu condivisione
+            shareBtn.addEventListener('click', function(e) {
+                if (!currentPassword) return;
+                
+                shareMenuVisible = !shareMenuVisible;
+                if (shareMenuVisible) {
+                    // Mostra il menu di condivisione sotto il pulsante
+                    const shareBtnRect = shareBtn.getBoundingClientRect();
+                    shareOptions.style.display = 'block';
+                    shareOptions.style.position = 'fixed';
+                    shareOptions.style.left = `${shareBtnRect.left}px`;
+                    shareOptions.style.top = `${shareBtnRect.bottom + 5}px`;
+                    
+                    // Mostra avviso di sicurezza
+                    securityWarning.style.display = 'block';
+                } else {
+                    shareOptions.style.display = 'none';
+                    securityWarning.style.display = 'none';
+                }
+                
+                e.stopPropagation();
+            });
+            
+            // Chiudi menu di condivisione cliccando fuori
+            document.addEventListener('click', function() {
+                if (shareMenuVisible) {
+                    shareOptions.style.display = 'none';
+                    shareMenuVisible = false;
+                    securityWarning.style.display = 'none';
+                }
+            });
+            
+            // Prevenire la chiusura quando si clicca sul menu
+            shareOptions.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+            
+            // Opzioni di condivisione
+            
+            // 1. Condivisione nativa (Web Share API)
+            document.getElementById('shareNative').addEventListener('click', async function() {
+                if (!currentPassword) return;
+                
+                if (navigator.share) {
+                    try {
+                        await navigator.share({
+                            title: 'Password generata',
+                            text: `Ecco la tua password generata: ${currentPassword}`,
+                            url: window.location.href
+                        });
+                        showSuccessMessage('Condivisione completata!');
+                    } catch (error) {
+                        if (error.name !== 'AbortError') {
+                            showSuccessMessage('Condivisione annullata o non supportata');
+                        }
+                    }
+                } else {
+                    showSuccessMessage('Condivisione nativa non supportata dal browser');
+                }
+                
+                shareOptions.style.display = 'none';
+                shareMenuVisible = false;
+                securityWarning.style.display = 'none';
+            });
+            
+            // 2. Condivisione via Email
+            document.getElementById('shareEmail').addEventListener('click', function() {
+                if (!currentPassword) return;
+                
+                const subject = 'Password generata';
+                const body = `Ecco la tua password generata: ${currentPassword}\n\nGenerata con il generatore di password.`;
+                const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                
+                window.open(mailtoLink, '_blank');
+                showSuccessMessage('Apertura client email...');
+                
+                shareOptions.style.display = 'none';
+                shareMenuVisible = false;
+                securityWarning.style.display = 'none';
+            });
+            
+            // 3. Condivisione su WhatsApp
+            document.getElementById('shareWhatsApp').addEventListener('click', function() {
+                if (!currentPassword) return;
+                
+                const text = `Ecco la tua password generata: ${currentPassword}`;
+                const whatsappLink = `https://wa.me/?text=${encodeURIComponent(text)}`;
+                
+                window.open(whatsappLink, '_blank');
+                showSuccessMessage('Apertura WhatsApp...');
+                
+                shareOptions.style.display = 'none';
+                shareMenuVisible = false;
+                securityWarning.style.display = 'none';
+            });
+            
+            // 4. Condivisione su Telegram
+            document.getElementById('shareTelegram').addEventListener('click', function() {
+                if (!currentPassword) return;
+                
+                const text = `Ecco la tua password generata: ${currentPassword}`;
+                const telegramLink = `https://t.me/share/url?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(text)}`;
+                
+                window.open(telegramLink, '_blank');
+                showSuccessMessage('Apertura Telegram...');
+                
+                shareOptions.style.display = 'none';
+                shareMenuVisible = false;
+                securityWarning.style.display = 'none';
+            });
+            
+            // 5. Copia come Link (con password codificata)
+            document.getElementById('shareCopyLink').addEventListener('click', function() {
+                if (!currentPassword) return;
+                
+                // Creiamo un link con la password codificata in base64
+                const encodedPassword = btoa(currentPassword);
+                const link = `${window.location.origin}${window.location.pathname}#pwd=${encodedPassword}`;
+                
+                navigator.clipboard.writeText(link).then(() => {
+                    showSuccessMessage('Link copiato negli appunti!');
+                }).catch(() => {
+                    // Fallback
+                    const tempInput = document.createElement('input');
+                    tempInput.value = link;
+                    document.body.appendChild(tempInput);
+                    tempInput.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(tempInput);
+                    showSuccessMessage('Link copiato negli appunti!');
+                });
+                
+                shareOptions.style.display = 'none';
+                shareMenuVisible = false;
+                securityWarning.style.display = 'none';
+            });
+            
+            // Inizializza
+            updateGenerateButton();
+            copyBtn.disabled = true;
+            shareBtn.disabled = true;
+            
+            // Verifica se la Web Share API è supportata
+            if (!navigator.share) {
+                document.getElementById('shareNative').innerHTML = '<span>⚠️</span><span>Non supportato</span>';
+                document.getElementById('shareNative').disabled = true;
+            }
+        });
+    </script>
+</body>
+</html>
