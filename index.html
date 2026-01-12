@@ -1,0 +1,54 @@
+
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Redirect automatico</title>
+
+    <script>
+        const STORAGE_KEY = "preferenzaVersione";
+
+        function isMobile() {
+            return (
+                /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i
+                    .test(navigator.userAgent)
+                || window.innerWidth <= 768
+            );
+        }
+
+        function redirect() {
+            const preferenza = localStorage.getItem(STORAGE_KEY);
+
+            // 1️⃣ Se l’utente ha già scelto
+            if (preferenza === "mobile") {
+                window.location.replace("ricerca_M.html");
+                return;
+            }
+
+            if (preferenza === "desktop") {
+                window.location.replace("ricerca_S.html");
+                return;
+            }
+
+            // 2️⃣ Scelta automatica
+            if (isMobile()) {
+                window.location.replace("ricerca_M.html");
+            } else {
+                window.location.replace("ricerca_S.html");
+            }
+        }
+
+        redirect();
+    </script>
+</head>
+
+<body>
+    <noscript>
+        <p>
+            JavaScript è disabilitato.<br>
+            <a href="ricerca_S.html">Vai alla versione desktop</a> |
+            <a href="ricerca_M.html">Vai alla versione mobile</a>
+        </p>
+    </noscript>
+</body>
+</html>
