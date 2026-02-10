@@ -71,21 +71,18 @@
         return Math.floor((new Date() - excelToDate(ed)) / (1000 * 60 * 60 * 24));
     };
 
-    async function initDatabase() {
-       try {
-        updateDebug("FETCHING...");
-        
-        // Usiamo un timestamp per evitare che GitHub Pages serva una versione vecchia (cache)
-        const dbPath = `database/DB.xlsx?v=${new Date().getTime()}`;
-        
-        const response = await fetch(dbPath);
-        
-        if (!response.ok) {
-            throw new Error(`File non trovato al percorso: ${dbPath}`);
-        }
-        
-        const arrayBuffer = await response.arrayBuffer();
-        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+async function initDatabase() {
+        try {
+            // Aggiungiamo ./ davanti per sicurezza su GitHub
+            const response = await fetch('./database/DB.xlsx');
+            
+            if (!response.ok) {
+                // Questo ci dirà se il file non viene trovato (404)
+                throw new Error(`Errore HTTP: ${response.status} - File non trovato al percorso: database/DB.xlsx`);
+            }
+            
+            const arrayBuffer = await response.arrayBuffer();
+            const workbook = XLSX.read(arrayBuffer, { type: 'array' });
             
             db.parco = XLSX.utils.sheet_to_json(workbook.Sheets["PARCO"] || []);
             db.m28 = XLSX.utils.sheet_to_json(workbook.Sheets["M28"] || []);
@@ -102,14 +99,14 @@
 
             document.getElementById('dbStatusText').textContent = "PORTALE PRONTO";
             document.getElementById('dbStatusText').className = "text-emerald-400 font-bold";
-            document.getElementById('debugStats').innerHTML = `Impianti: ${db.parco.length} | Commesse: ${db.commesse.length}`;
-      } catch (err) {
-        console.error("Errore Caricamento DB:", err);
-        updateDebug("ERRORE");
-        document.getElementById('debugStats').innerHTML = `<div class="text-red-400 text-[10px]">${err.message}</div>`;
+            document.getElementById('debugStats').innerHTML = `Impianti: ${db.parco.length}`;
+        } catch (err) {
+            // ORA IL MESSAGGIO SARÀ DETTAGLIATO
+            document.getElementById('dbStatusText').textContent = "ERRORE DB";
+            document.getElementById('debugStats').innerHTML = `<span class="text-red-400 text-[9px]">${err.message}</span>`;
+            console.error("Dettaglio Errore:", err);
+        }
     }
-    }
-
     document.getElementById('searchForm').addEventListener('submit', (e) => {
         e.preventDefault();
         const q = document.getElementById('query').value.toLowerCase().trim();
